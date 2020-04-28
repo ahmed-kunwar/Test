@@ -1,0 +1,39 @@
+from scapy.all import *
+import os
+import subprocess
+import msvcrt
+import signal
+
+from scapy.layers.dns import DNSRR
+from scapy.layers.http import HTTP
+
+
+def main():
+    # Returns a file descriptor to the output file if available or creates it
+    fd = os.open("alpha.pcap", os.O_RDWR | os.O_CREAT)
+
+    # Creates a subprocess and executes the commands listed in args and write the output to file
+    p = subprocess.Popen(["windump.exe", '-i', "5"], stdout=fd)
+
+    # Checks if key 'C' pressed or not, if pressed then termintates the child process and whole program
+
+    while True:
+        if msvcrt.kbhit():
+            key = msvcrt.getch()
+            if key.decode("utf-8") == "c":
+                print("Exiting...")
+                p.send_signal(signal.CTRL_C_EVENT)
+                break
+    #rdpcap comes from scapy and loads in our pcap file
+    packets = rdpcap('alpha.pcap')
+    # packets
+    # Let's iterate through every packet
+    for packet in packets:
+        # We're only interested packets with a DNS Round Robin layer
+        if packet.haslayer(DNSRR):
+            # If the an(swer) is a DNSRR, print the name it replied with.
+            if isinstance(packet.an, DNSRR):
+                print(packet.an.rrname)
+    os.system("pause")
+if __name__ == "__main__":
+    main()
